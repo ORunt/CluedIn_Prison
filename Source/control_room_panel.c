@@ -9,7 +9,7 @@
 
 UINT8 offset = 0;
 UINT8 input_buffer[5] = {0};
-UINT8 ans_buffer[5] = {4, 5, 1, 2, 8};
+UINT8 ans_buffer[5] = {0,1,8,7,4};
 
 static void InitGpio(void)
 {
@@ -42,7 +42,7 @@ static void Winner(void)
 	GPIOB->ODR = 0x00BA; // +
 	delay_long(2);
 	GPIOB->ODR = E_LOCK;
-	delay_long(8);
+	delay_long(14);		// 3 seconds
 	GPIOB->ODR = 0x0000;
 }
 
