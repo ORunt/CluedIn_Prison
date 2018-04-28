@@ -20,6 +20,7 @@
 #define PIN_OUT_TOGGLE        GPIO_Pin_5
 #define PIN_OUT_ACTUATOR_FWD  GPIO_Pin_6
 #define PIN_OUT_ACTUATOR_REV  GPIO_Pin_7
+#define PIN_IN_ACTUATOR_REV   GPIO_Pin_8
 #define PIN_OUT_MASK          (PIN_OUT_LASER | PIN_OUT_LIGHT | PIN_OUT_TOGGLE)
 
 #define PROGRESS_MASK   0x3FF
@@ -186,7 +187,7 @@ void EXTI4_15_IRQHandler(void)
   {
     delay_short();
     
-    if(CHK_BIT(GPIOB->IDR, PIN_OUT_ACTUATOR_REV))
+    if(CHK_BIT(GPIOB->IDR, PIN_IN_ACTUATOR_REV))
       BIT_SET(GPIOB->ODR, PIN_OUT_ACTUATOR_REV);
     else
       BIT_CLR(GPIOB->ODR, PIN_OUT_ACTUATOR_REV);
