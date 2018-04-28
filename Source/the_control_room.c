@@ -3,7 +3,6 @@
     then it activates the final clue!
 */
 
-
 #include "stm32f0xx.h"
 #include "definitions.h"
 #include "utils.h"
@@ -13,43 +12,31 @@
 #include "stm32f0xx_misc.h"
 
 
-#define PIN_IN_LASER			GPIO_Pin_0
-#define PIN_IN_LIGHT			GPIO_Pin_1
-#define PIN_IN_TOGGLE			GPIO_Pin_2
-#define PIN_OUT_LASER			GPIO_Pin_3
-#define PIN_OUT_LIGHT			GPIO_Pin_4
-#define PIN_OUT_TOGGLE		GPIO_Pin_5
-#define PIN_OUT_ACTUATOR	GPIO_Pin_6
-#define PIN_OUT_MASK			(PIN_OUT_LASER | PIN_OUT_LIGHT | PIN_OUT_TOGGLE)
+#define PIN_IN_LASER          GPIO_Pin_0
+#define PIN_IN_LIGHT          GPIO_Pin_1
+#define PIN_IN_TOGGLE         GPIO_Pin_2
+#define PIN_OUT_LASER         GPIO_Pin_3
+#define PIN_OUT_LIGHT         GPIO_Pin_4
+#define PIN_OUT_TOGGLE        GPIO_Pin_5
+#define PIN_OUT_ACTUATOR_FWD  GPIO_Pin_6
+#define PIN_OUT_ACTUATOR_REV  GPIO_Pin_7
+#define PIN_OUT_MASK          (PIN_OUT_LASER | PIN_OUT_LIGHT | PIN_OUT_TOGGLE)
 
-#define PROGRESS_MASK		0x3FF
-#define ON							0x01
-#define OFF							0x00
+#define PROGRESS_MASK   0x3FF
+#define ON              0x01
+#define OFF             0x00
 
 UINT8 laser_state = OFF;
 UINT8 complete = OFF;
 
 static void InitGpio(void)
 {
-	RCC->AHBENR |= 0x060000;	// PA and PB clock active
-	GPIOA->MODER |= 0x55555;	// PA0 - PA9 outputs
-	GPIOB->MODER = 0x1540;		// PB3 - PB6 outputs
-	GPIOB->PUPDR = 0x2A;			// PB0 - PB2 pull-down
+	RCC->AHBENR |= 0x060000;  // PA and PB clock active
+	GPIOA->MODER |= 0x55555;  // PA0 - PA9 outputs
+	GPIOB->MODER = 0x5540;    // PB3 - PB7 outputs
+	GPIOB->PUPDR = 0x2002A;   // PB0 - PB2, PB7 pull-down
 }
 
-static void InitInterupts(void)
-{
-  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN; // Enable the flippen clock!          // 0. Freaking turn this on first!!!
-	SYSCFG->EXTICR[0] |= (SYSCFG_EXTICR1_EXTI1_PB | SYSCFG_EXTICR1_EXTI2_PB);   // 1. clear bits 3:0 in the SYSCFG_EXTICR1 reg to amp EXTI Line to NVIC
-	EXTI->RTSR = EXTI_RTSR_TR1 | EXTI_RTSR_TR2;                                 // 2. Set interrupt trigger to rising edge
-  EXTI->FTSR = EXTI_FTSR_TR1 | EXTI_FTSR_TR2;                                 // 2. Set interrupt trigger to falling edge
-	EXTI->IMR = EXTI_IMR_MR1 | EXTI_IMR_MR2;                                    // 3. unmask EXTI0 line
-  NVIC_SetPriority(EXTI0_1_IRQn, 0);  // 4. Set Priority to 0
-  NVIC_SetPriority(EXTI2_3_IRQn, 1);  // 4. Set Priority to 1
-  NVIC_EnableIRQ(EXTI0_1_IRQn);       // 5. Enable EXTI0_1 interrupt in NVIC (do 4 first)
-  NVIC_EnableIRQ(EXTI2_3_IRQn);       // 5. Enable EXTI2_3 interrupt in NVIC (do 4 first)
-}
-/*
 static void InitInterupts(void)
 {
   EXTI_InitTypeDef   EXTI_InitStructure;
@@ -70,6 +57,10 @@ static void InitInterupts(void)
   // Configure EXTI2 line
   EXTI_InitStructure.EXTI_Line = EXTI_Line2;
   EXTI_Init(&EXTI_InitStructure);
+  
+  // Configure EXTI8 line
+  EXTI_InitStructure.EXTI_Line = EXTI_Line8;
+  EXTI_Init(&EXTI_InitStructure);
 
   // Enable and set EXTI0_1 Interrupt
   NVIC_InitStructure.NVIC_IRQChannel = EXTI0_1_IRQn;
@@ -80,7 +71,19 @@ static void InitInterupts(void)
   // Enable and set EXTI2_3 Interrupt
   NVIC_InitStructure.NVIC_IRQChannel = EXTI2_3_IRQn;
   NVIC_Init(&NVIC_InitStructure);
-}*/
+}
+
+static void DisableInterrupts(void)
+{
+  EXTI_InitTypeDef   EXTI_InitStructure;
+  
+  EXTI_InitStructure.EXTI_Line = EXTI_Line1;
+  EXTI_InitStructure.EXTI_LineCmd = DISABLE;
+  EXTI_Init(&EXTI_InitStructure);
+  
+  EXTI_InitStructure.EXTI_Line = EXTI_Line2;
+  EXTI_Init(&EXTI_InitStructure);
+}
 
 static void IncBar(void)
 {
@@ -120,6 +123,8 @@ int main(void)
 	InitGpio();
   InitInterupts();
   
+  // TODO: Maybe put something in here that auto brings the actuator down.
+  
   while(!complete)
   {
     /***************** LASER *******************/
@@ -134,24 +139,26 @@ int main(void)
       delay_long(1);
     }
   }
-  BIT_SET(GPIOB->ODR, PIN_OUT_ACTUATOR);
+  DisableInterrupts();
+  BIT_SET(GPIOB->ODR, PIN_OUT_ACTUATOR_FWD);
+  delay_long(40);
+  BIT_CLR(GPIOB->ODR, PIN_OUT_ACTUATOR_FWD);
 }
 
 
 /***************** LIGHT *******************/
 void EXTI0_1_IRQHandler(void)
 {
-  if((EXTI->IMR & EXTI_IMR_MR1) && (EXTI->PR & EXTI_PR_PR1))
-  //if(EXTI_GetITStatus(EXTI_Line1) != RESET)
+  if(EXTI_GetITStatus(EXTI_Line1) != RESET)
   {
-    delay_long(1);
+    delay_short();
+    
     if(CHK_BIT(GPIOB->IDR, PIN_IN_LIGHT))
       BIT_SET(GPIOB->ODR, PIN_OUT_LIGHT);
     else
       BIT_CLR(GPIOB->ODR, PIN_OUT_LIGHT);
     
-    EXTI->PR |= EXTI_PR_PR1;
-    //EXTI_ClearITPendingBit(EXTI_Line1);
+    EXTI_ClearITPendingBit(EXTI_Line1);
   }
 }
 
@@ -159,15 +166,31 @@ void EXTI0_1_IRQHandler(void)
 /**************** TOGGLE *******************/
 void EXTI2_3_IRQHandler(void)
 {
-  if((EXTI->IMR & EXTI_IMR_MR2) && (EXTI->PR & EXTI_PR_PR2))
-  //if(EXTI_GetITStatus(EXTI_Line2) != RESET)
+  if(EXTI_GetITStatus(EXTI_Line2) != RESET)
   {
-    delay_long(1);
+    delay_short();
+    
     if(CHK_BIT(GPIOB->IDR, PIN_IN_TOGGLE))
       BIT_SET(GPIOB->ODR, PIN_OUT_TOGGLE);
     else
       BIT_CLR(GPIOB->ODR, PIN_OUT_TOGGLE);
-    EXTI->PR |= EXTI_PR_PR2;
-    //EXTI_ClearITPendingBit(EXTI_Line2);
+    
+    EXTI_ClearITPendingBit(EXTI_Line2);
+  }
+}
+
+/**************** TOGGLE *******************/
+void EXTI4_15_IRQHandler(void)
+{
+  if(EXTI_GetITStatus(EXTI_Line8) != RESET)
+  {
+    delay_short();
+    
+    if(CHK_BIT(GPIOB->IDR, PIN_OUT_ACTUATOR_REV))
+      BIT_SET(GPIOB->ODR, PIN_OUT_ACTUATOR_REV);
+    else
+      BIT_CLR(GPIOB->ODR, PIN_OUT_ACTUATOR_REV);
+    
+    EXTI_ClearITPendingBit(EXTI_Line8);
   }
 }
