@@ -779,6 +779,21 @@
               <FileType>1</FileType>
               <FilePath>.\Source\utils.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32f0xx_exti.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_exti.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_misc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_misc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_syscfg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1561,6 +1576,21 @@
               <FileName>utils.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\utils.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_exti.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_exti.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_misc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_misc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_syscfg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -2345,6 +2375,21 @@
               <FileType>1</FileType>
               <FilePath>.\Source\utils.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32f0xx_exti.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_exti.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_misc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_misc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_syscfg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -3127,6 +3172,21 @@
               <FileName>utils.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\utils.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_exti.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_exti.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_misc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_misc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_syscfg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -3911,6 +3971,21 @@
               <FileType>1</FileType>
               <FilePath>.\Source\utils.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32f0xx_exti.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_exti.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_misc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_misc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_syscfg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -4694,6 +4769,21 @@
               <FileType>1</FileType>
               <FilePath>.\Source\utils.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32f0xx_exti.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_exti.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_misc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_misc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_syscfg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -5031,9 +5121,9 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define></Define>
+              <Define>STM32F030x6</Define>
               <Undefine></Undefine>
-              <IncludePath>.\Source;.\RTE\Device\STM32F030C6</IncludePath>
+              <IncludePath>.\Source;.\RTE\Device\STM32F030C6;.\Source\lib</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -5049,7 +5139,7 @@
             <uClangAs>0</uClangAs>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define></Define>
+              <Define>STM32F030x6</Define>
               <Undefine></Undefine>
               <IncludePath>.\RTE\Device\STM32F030C6</IncludePath>
             </VariousControls>
@@ -5476,6 +5566,21 @@
               <FileName>utils.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\utils.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_exti.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_exti.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_misc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_misc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_syscfg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -6259,6 +6364,21 @@
               <FileName>utils.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\utils.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_exti.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_exti.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_misc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_misc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_syscfg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
             </File>
           </Files>
         </Group>
