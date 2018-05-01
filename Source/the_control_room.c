@@ -138,13 +138,16 @@ static void IncBar(void)
 {
   UINT16 progress = GPIOA->ODR & PROGRESS_MASK;
 	
-	if (progress)
-		progress = (progress >> 1) | 0x200;
-	else 
-		progress = 0x200;
-	
-	GPIOA->ODR |= progress;
-  delay_long(4);
+  if (progress != PROGRESS_MASK)
+  {
+    if (progress)
+      progress = (progress >> 1) | 0x200;
+    else 
+      progress = 0x200;
+    
+    GPIOA->ODR |= progress;
+    delay_long(4);
+  }
 }
 
 static void DecBar(void)
@@ -188,8 +191,15 @@ int main(void)
   DisableInterrupts();  // TODO: for non interrupts, disable leds so they can't be reacivated
   BIT_SET(GPIOB->ODR, PIN_OUT_ACTUATOR_FWD);
   delay_long(40);
+  delay_long(40);
   BIT_CLR(GPIOB->ODR, PIN_OUT_ACTUATOR_FWD);
-  for(;;);
+  for(;;)
+  {
+#ifndef INTERRUPTS_ON
+    ActuatorInterruptRoutine();
+    delay_short();
+#endif
+  }
 }
 
 #ifdef INTERRUPTS_ON
