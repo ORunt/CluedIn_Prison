@@ -87,6 +87,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+#define assert_param(expr) ((void)0)
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -141,11 +142,12 @@ void GPIO_DeInit(GPIO_TypeDef* GPIOx)
     RCC_AHBPeriphResetCmd(RCC_AHBPeriph_GPIOD, ENABLE);
     RCC_AHBPeriphResetCmd(RCC_AHBPeriph_GPIOD, DISABLE);
   }
+  /*
   else if(GPIOx == GPIOE)
   {
     RCC_AHBPeriphResetCmd(RCC_AHBPeriph_GPIOE, ENABLE);
     RCC_AHBPeriphResetCmd(RCC_AHBPeriph_GPIOE, DISABLE);
-  }
+  }*/
   else
   {
     if(GPIOx == GPIOF)

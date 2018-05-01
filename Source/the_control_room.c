@@ -18,14 +18,17 @@
 #define PIN_OUT_LASER         GPIO_Pin_3
 #define PIN_OUT_LIGHT         GPIO_Pin_4
 #define PIN_OUT_TOGGLE        GPIO_Pin_5
-#define PIN_OUT_ACTUATOR_FWD  GPIO_Pin_6
-#define PIN_OUT_ACTUATOR_REV  GPIO_Pin_7
-#define PIN_IN_ACTUATOR_REV   GPIO_Pin_8
+#define PIN_IN_ACTUATOR_REV   GPIO_Pin_6
+#define PIN_OUT_ACTUATOR_FWD  GPIO_Pin_7
+#define PIN_OUT_ACTUATOR_REV  GPIO_Pin_8
+
 #define PIN_OUT_MASK          (PIN_OUT_LASER | PIN_OUT_LIGHT | PIN_OUT_TOGGLE)
 
 #define PROGRESS_MASK   0x3FF
 #define ON              0x01
 #define OFF             0x00
+#define TRUE            0x01
+#define FALSE           0x00
 
 UINT8 laser_state = OFF;
 UINT8 complete = OFF;
@@ -34,8 +37,8 @@ static void InitGpio(void)
 {
 	RCC->AHBENR |= 0x060000;  // PA and PB clock active
 	GPIOA->MODER |= 0x55555;  // PA0 - PA9 outputs
-	GPIOB->MODER = 0x5540;    // PB3 - PB7 outputs
-	GPIOB->PUPDR = 0x2002A;   // PB0 - PB2, PB7 pull-down
+  GPIOA->MODER = SetOutput(PIN_OUT_LASER | PIN_OUT_LIGHT | PIN_OUT_TOGGLE | PIN_OUT_ACTUATOR_FWD | PIN_OUT_ACTUATOR_REV);
+	GPIOB->PUPDR = SetPullDown(PIN_IN_LASER | PIN_IN_LIGHT | PIN_IN_TOGGLE | PIN_IN_ACTUATOR_REV);
 }
 
 static void InitInterupts(void)
@@ -47,6 +50,7 @@ static void InitInterupts(void)
   
   SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOB, EXTI_PinSource1);
   SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOB, EXTI_PinSource2);  
+  SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOB, EXTI_PinSource6); 
   
   // Configure EXTI1 line
   EXTI_InitStructure.EXTI_Line = EXTI_Line1;
@@ -60,7 +64,7 @@ static void InitInterupts(void)
   EXTI_Init(&EXTI_InitStructure);
   
   // Configure EXTI8 line
-  EXTI_InitStructure.EXTI_Line = EXTI_Line8;
+  EXTI_InitStructure.EXTI_Line = EXTI_Line6;
   EXTI_Init(&EXTI_InitStructure);
 
   // Enable and set EXTI0_1 Interrupt
@@ -71,6 +75,10 @@ static void InitInterupts(void)
   
   // Enable and set EXTI2_3 Interrupt
   NVIC_InitStructure.NVIC_IRQChannel = EXTI2_3_IRQn;
+  NVIC_Init(&NVIC_InitStructure);
+  
+  // Enable and set EXTI4_15 Interrupt
+  NVIC_InitStructure.NVIC_IRQChannel = EXTI4_15_IRQn;
   NVIC_Init(&NVIC_InitStructure);
 }
 
@@ -85,7 +93,7 @@ static void DisableInterrupts(void)
   EXTI_InitStructure.EXTI_Line = EXTI_Line2;
   EXTI_Init(&EXTI_InitStructure);
 }
-
+/*
 static void IncBar(void)
 {
 	UINT16 progress = GPIOA->ODR & PROGRESS_MASK;
@@ -117,6 +125,29 @@ static void DecBar(void)
 	
 	if (!(progress & PROGRESS_MASK))
 		laser_state = OFF;
+}*/
+
+static void IncBar(void)
+{
+  UINT16 progress = GPIOA->ODR & PROGRESS_MASK;
+	
+	if (progress)
+		progress = (progress >> 1) | 0x200;
+	else 
+		progress = 0x200;
+	
+	GPIOA->ODR |= progress;
+  delay_long(4);
+}
+
+static void DecBar(void)
+{
+  UINT32 progress = GPIOA->ODR & PROGRESS_MASK;
+	
+	progress = (progress << 1) | (~PROGRESS_MASK);
+	
+	GPIOA->ODR &= progress;
+  delay_long(1);
 }
 
 int main(void)
@@ -128,7 +159,8 @@ int main(void)
   
   while(!complete)
   {
-    /***************** LASER *******************/
+    /***************** LASER1 *******************/
+    /*
     while (CHK_BIT(GPIOB->IDR, PIN_IN_LASER))
     {
       IncBar();
@@ -138,12 +170,26 @@ int main(void)
     {
       DecBar();
       delay_long(1);
-    }
+    }*/
+    /***************** LASER2 *******************/
+    if(CHK_BIT(GPIOB->IDR, PIN_IN_LASER))
+      IncBar();
+    else if (GPIOA->ODR & PROGRESS_MASK)
+      DecBar();
+    
+    if (CHK_BIT(GPIOA->ODR, PROGRESS_MASK)) // If it hit the top
+      BIT_SET(GPIOB->ODR, PIN_OUT_LASER);
+    else
+      BIT_CLR(GPIOB->ODR, PIN_OUT_LASER);
+    
+    if (CHK_BIT(GPIOB->ODR, PIN_OUT_MASK))
+        complete = TRUE;
   }
   DisableInterrupts();
   BIT_SET(GPIOB->ODR, PIN_OUT_ACTUATOR_FWD);
   delay_long(40);
   BIT_CLR(GPIOB->ODR, PIN_OUT_ACTUATOR_FWD);
+  for(;;);
 }
 
 
@@ -152,12 +198,11 @@ void EXTI0_1_IRQHandler(void)
 {
   if(EXTI_GetITStatus(EXTI_Line1) != RESET)
   {
-    delay_short();
-    
     if(CHK_BIT(GPIOB->IDR, PIN_IN_LIGHT))
       BIT_SET(GPIOB->ODR, PIN_OUT_LIGHT);
     else
       BIT_CLR(GPIOB->ODR, PIN_OUT_LIGHT);
+    delay_nano();
     
     EXTI_ClearITPendingBit(EXTI_Line1);
   }
@@ -168,30 +213,27 @@ void EXTI0_1_IRQHandler(void)
 void EXTI2_3_IRQHandler(void)
 {
   if(EXTI_GetITStatus(EXTI_Line2) != RESET)
-  {
-    delay_short();
-    
+  {    
     if(CHK_BIT(GPIOB->IDR, PIN_IN_TOGGLE))
       BIT_SET(GPIOB->ODR, PIN_OUT_TOGGLE);
     else
       BIT_CLR(GPIOB->ODR, PIN_OUT_TOGGLE);
-    
+    delay_nano();
     EXTI_ClearITPendingBit(EXTI_Line2);
   }
 }
 
-/**************** TOGGLE *******************/
+/**************** ACTUATOR *******************/
 void EXTI4_15_IRQHandler(void)
 {
-  if(EXTI_GetITStatus(EXTI_Line8) != RESET)
+  if(EXTI_GetITStatus(EXTI_Line6) != RESET)
   {
-    delay_short();
-    
     if(CHK_BIT(GPIOB->IDR, PIN_IN_ACTUATOR_REV))
       BIT_SET(GPIOB->ODR, PIN_OUT_ACTUATOR_REV);
     else
       BIT_CLR(GPIOB->ODR, PIN_OUT_ACTUATOR_REV);
+    delay_nano();
     
-    EXTI_ClearITPendingBit(EXTI_Line8);
+    EXTI_ClearITPendingBit(EXTI_Line6);
   }
 }

@@ -794,6 +794,11 @@
               <FileType>1</FileType>
               <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32f0xx_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_adc.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1131,9 +1136,9 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define></Define>
+              <Define>STM32F051x8</Define>
               <Undefine></Undefine>
-              <IncludePath>.\Source;.\RTE\Device\STM32F051C6</IncludePath>
+              <IncludePath>.\Source;.\RTE\Device\STM32F051C6;.\Source\lib</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -1149,7 +1154,7 @@
             <uClangAs>0</uClangAs>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define></Define>
+              <Define>STM32F051x8</Define>
               <Undefine></Undefine>
               <IncludePath>.\RTE\Device\STM32F051C6</IncludePath>
             </VariousControls>
@@ -1591,6 +1596,11 @@
               <FileName>stm32f0xx_syscfg.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_adc.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -2390,6 +2400,11 @@
               <FileType>1</FileType>
               <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32f0xx_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_adc.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -3187,6 +3202,11 @@
               <FileName>stm32f0xx_syscfg.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_adc.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -3986,6 +4006,11 @@
               <FileType>1</FileType>
               <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32f0xx_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_adc.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -4783,6 +4808,11 @@
               <FileName>stm32f0xx_syscfg.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_adc.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -5582,6 +5612,11 @@
               <FileType>1</FileType>
               <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32f0xx_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_adc.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -6379,6 +6414,11 @@
               <FileName>stm32f0xx_syscfg.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\lib\stm32f0xx_syscfg.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f0xx_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\lib\stm32f0xx_adc.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -128,7 +128,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-
+#define assert_param(expr) ((void)0)
 /* ---------------------- TIM registers bit mask ------------------------ */
 #define SMCR_ETR_MASK               ((uint16_t)0x00FF) 
 #define CCMR_OFFSET                 ((uint16_t)0x0018)

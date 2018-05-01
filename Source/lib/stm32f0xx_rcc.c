@@ -68,7 +68,8 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-
+#define assert_param(expr) ((void)0)
+#define HSE_STARTUP_TIMEOUT    ((uint32_t)100)   /*!< Time out for HSE start up, in ms */
 /* ---------------------- RCC registers mask -------------------------------- */
 /* RCC Flag Mask */
 #define FLAG_MASK                 ((uint8_t)0x1F)

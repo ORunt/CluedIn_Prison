@@ -1,69 +1,64 @@
-#define STM32F051
+//#include <stm32f0xx_rcc.h>
+#include <stm32f0xx_adc.h>
+//#include <stm32f0xx_gpio.h>
 
-#include <stm32f4xx_gpio.h>
-#include <stm32f4xx_rcc.h>
-#include <stm32f4xx_tim.h>
-
-void InitializeTimer(int period = 500)
+void InitAdc(void)
 {
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
+  ADC_InitTypeDef     ADC_InitStructure;
+  //GPIO_InitTypeDef    GPIO_InitStructure;
 
-    TIM_TimeBaseInitTypeDef timerInitStructure;
-    timerInitStructure.TIM_Prescaler = 40000;
-    timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
-    timerInitStructure.TIM_Period = period;
-    timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-    timerInitStructure.TIM_RepetitionCounter = 0;
-    TIM_TimeBaseInit(TIM4, &timerInitStructure);
-    TIM_Cmd(TIM4, ENABLE);
-}
+  //RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);   // GPIOA Periph clock enable
+  //RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);  // ADC1  Periph clock enable
+  
+  /* Configure ADC Channel11 as analog input */
+#ifdef USE_STM320518_EVAL
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1 ;
+#else
+  //GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 ;
+#endif /* USE_STM320518_EVAL */
+  //GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
+  //GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL ;
+  //GPIO_Init(GPIOC, &GPIO_InitStructure);
+  
+  /* ADCs DeInit */  
+  ADC_DeInit(ADC1);
+  
+  /* Initialize ADC structure */
+  ADC_StructInit(&ADC_InitStructure);
+  
+  /* Configure the ADC1 in continuous mode with a resolution equal to 12 bits  */
+  ADC_InitStructure.ADC_Resolution = ADC_Resolution_12b;
+  ADC_InitStructure.ADC_ContinuousConvMode = ENABLE; 
+  ADC_InitStructure.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;
+  ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
+  ADC_InitStructure.ADC_ScanDirection = ADC_ScanDirection_Upward;
+  ADC_Init(ADC1, &ADC_InitStructure); 
+  
+  /* Convert the ADC1 Channel 11 with 239.5 Cycles as sampling time */ 
+#ifdef USE_STM320518_EVAL
+  ADC_ChannelConfig(ADC1, ADC_Channel_11 , ADC_SampleTime_239_5Cycles);
+#else
+  ADC_ChannelConfig(ADC1, ADC_Channel_10 , ADC_SampleTime_239_5Cycles);
+#endif /* USE_STM320518_EVAL */
 
-void InitializePWMChannel()
-{
-	TIM_OCInitTypeDef outputChannelInit = {0,};
-	outputChannelInit.TIM_OCMode = TIM_OCMode_PWM1;
-	outputChannelInit.TIM_Pulse = 400;
-	outputChannelInit.TIM_OutputState = TIM_OutputState_Enable;
-	outputChannelInit.TIM_OCPolarity = TIM_OCPolarity_High;
-
-	TIM_OC1Init(TIM4, &outputChannelInit);
-	TIM_OC1PreloadConfig(TIM4, TIM_OCPreload_Enable);
-
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource12, GPIO_AF_TIM4);
-}
-
-void InitializePWMChannel2()
-{
-	TIM_OCInitTypeDef outputChannelInit = {0,};
-	outputChannelInit.TIM_OCMode = TIM_OCMode_PWM1;
-	outputChannelInit.TIM_Pulse = 100;
-	outputChannelInit.TIM_OutputState = TIM_OutputState_Enable;
-	outputChannelInit.TIM_OCPolarity = TIM_OCPolarity_High;
-
-	TIM_OC2Init(TIM4, &outputChannelInit);
-	TIM_OC2PreloadConfig(TIM4, TIM_OCPreload_Enable);
-
-	GPIO_PinAFConfig(GPIOD, GPIO_PinSource13, GPIO_AF_TIM4);
-}
-
-void InitializeLEDs()
-{
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
-
-    GPIO_InitTypeDef gpioStructure;
-    gpioStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13;
-    gpioStructure.GPIO_Mode = GPIO_Mode_AF;
-    gpioStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOB, &gpioStructure);
+  /* ADC Calibration */
+  ADC_GetCalibrationFactor(ADC1);
+  
+  /* Enable the ADC peripheral */
+  ADC_Cmd(ADC1, ENABLE);     
+  
+  /* Wait the ADRDY flag */
+  while(!ADC_GetFlagStatus(ADC1, ADC_FLAG_ADRDY)); 
+  
+  /* ADC1 regular Software Start Conv */ 
+  ADC_StartOfConversion(ADC1);
+  
 }
 
 
 int main()
 {
-	InitializeLEDs();
-	InitializeTimer();
-	InitializePWMChannel();
-	InitializePWMChannel2();
+	InitAdc();
 	for (;;)
 	{
 	}
