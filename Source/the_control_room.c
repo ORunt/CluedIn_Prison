@@ -11,6 +11,7 @@
 #include "stm32f0xx_exti.h"
 #include "stm32f0xx_misc.h"
 
+//#define INTERRUPTS_ON       // Toggle this if I ever feel like fixing the interrupts
 
 #define PIN_IN_LASER          GPIO_Pin_0
 #define PIN_IN_LIGHT          GPIO_Pin_1
@@ -37,10 +38,35 @@ static void InitGpio(void)
 {
 	RCC->AHBENR |= 0x060000;  // PA and PB clock active
 	GPIOA->MODER |= 0x55555;  // PA0 - PA9 outputs
-  GPIOA->MODER = SetOutput(PIN_OUT_LASER | PIN_OUT_LIGHT | PIN_OUT_TOGGLE | PIN_OUT_ACTUATOR_FWD | PIN_OUT_ACTUATOR_REV);
+  GPIOB->MODER = SetOutput(PIN_OUT_LASER | PIN_OUT_LIGHT | PIN_OUT_TOGGLE | PIN_OUT_ACTUATOR_FWD | PIN_OUT_ACTUATOR_REV);
 	GPIOB->PUPDR = SetPullDown(PIN_IN_LASER | PIN_IN_LIGHT | PIN_IN_TOGGLE | PIN_IN_ACTUATOR_REV);
 }
 
+static void ActuatorInterruptRoutine(void)
+{
+  if(CHK_BIT(GPIOB->IDR, PIN_IN_ACTUATOR_REV))
+    BIT_SET(GPIOB->ODR, PIN_OUT_ACTUATOR_REV);
+  else
+    BIT_CLR(GPIOB->ODR, PIN_OUT_ACTUATOR_REV);
+}
+
+static void ToggleInterruptRoutine(void)
+{
+  if(CHK_BIT(GPIOB->IDR, PIN_IN_TOGGLE))
+    BIT_SET(GPIOB->ODR, PIN_OUT_TOGGLE);
+  else
+    BIT_CLR(GPIOB->ODR, PIN_OUT_TOGGLE);
+}
+
+static void LightPicInterruptRoutine(void)
+{
+  if(CHK_BIT(GPIOB->IDR, PIN_IN_LIGHT))
+    BIT_SET(GPIOB->ODR, PIN_OUT_LIGHT);
+  else
+    BIT_CLR(GPIOB->ODR, PIN_OUT_LIGHT);
+}
+
+#ifdef INTERRUPTS_ON
 static void InitInterupts(void)
 {
   EXTI_InitTypeDef   EXTI_InitStructure;
@@ -93,39 +119,20 @@ static void DisableInterrupts(void)
   EXTI_InitStructure.EXTI_Line = EXTI_Line2;
   EXTI_Init(&EXTI_InitStructure);
 }
-/*
-static void IncBar(void)
-{
-	UINT16 progress = GPIOA->ODR & PROGRESS_MASK;
-	
-	laser_state = ON;
-	
-	if (progress)
-		progress = (progress >> 1) | 0x200;
-	else 
-		progress = 0x200;
-	
-	GPIOA->ODR |= progress;
-	
-	if ((progress & PROGRESS_MASK) == PROGRESS_MASK)
-	{
-		SET_BIT(GPIOB->ODR, PIN_OUT_LASER);
-		if (CHK_BIT(GPIOB->ODR, PIN_OUT_MASK))
-			complete = ON;
-	}
-}
 
-static void DecBar(void)
+static void AllInterruptRoutines(void){}
+
+#else
+static void InitInterupts(void){}
+static void DisableInterrupts(void){}
+  
+static void AllInterruptRoutines(void)
 {
-	UINT32 progress = GPIOA->ODR & PROGRESS_MASK;
-	
-	progress = (progress << 1) | (~PROGRESS_MASK);
-	
-	GPIOA->ODR &= progress;
-	
-	if (!(progress & PROGRESS_MASK))
-		laser_state = OFF;
-}*/
+  ActuatorInterruptRoutine();
+  ToggleInterruptRoutine();
+  LightPicInterruptRoutine();
+}
+#endif
 
 static void IncBar(void)
 {
@@ -143,11 +150,14 @@ static void IncBar(void)
 static void DecBar(void)
 {
   UINT32 progress = GPIOA->ODR & PROGRESS_MASK;
-	
-	progress = (progress << 1) | (~PROGRESS_MASK);
-	
-	GPIOA->ODR &= progress;
-  delay_long(1);
+  
+	if(progress)
+  {
+    progress = (progress << 1) | (~PROGRESS_MASK);
+    
+    GPIOA->ODR &= progress;
+    delay_long(1);
+  }
 }
 
 int main(void)
@@ -159,18 +169,8 @@ int main(void)
   
   while(!complete)
   {
-    /***************** LASER1 *******************/
-    /*
-    while (CHK_BIT(GPIOB->IDR, PIN_IN_LASER))
-    {
-      IncBar();
-      delay_long(4);
-    }
-    if (laser_state == ON)
-    {
-      DecBar();
-      delay_long(1);
-    }*/
+    AllInterruptRoutines();
+    
     /***************** LASER2 *******************/
     if(CHK_BIT(GPIOB->IDR, PIN_IN_LASER))
       IncBar();
@@ -185,23 +185,20 @@ int main(void)
     if (CHK_BIT(GPIOB->ODR, PIN_OUT_MASK))
         complete = TRUE;
   }
-  DisableInterrupts();
+  DisableInterrupts();  // TODO: for non interrupts, disable leds so they can't be reacivated
   BIT_SET(GPIOB->ODR, PIN_OUT_ACTUATOR_FWD);
   delay_long(40);
   BIT_CLR(GPIOB->ODR, PIN_OUT_ACTUATOR_FWD);
   for(;;);
 }
 
-
+#ifdef INTERRUPTS_ON
 /***************** LIGHT *******************/
 void EXTI0_1_IRQHandler(void)
 {
   if(EXTI_GetITStatus(EXTI_Line1) != RESET)
   {
-    if(CHK_BIT(GPIOB->IDR, PIN_IN_LIGHT))
-      BIT_SET(GPIOB->ODR, PIN_OUT_LIGHT);
-    else
-      BIT_CLR(GPIOB->ODR, PIN_OUT_LIGHT);
+    LightPicInterruptRoutine();
     delay_nano();
     
     EXTI_ClearITPendingBit(EXTI_Line1);
@@ -214,10 +211,7 @@ void EXTI2_3_IRQHandler(void)
 {
   if(EXTI_GetITStatus(EXTI_Line2) != RESET)
   {    
-    if(CHK_BIT(GPIOB->IDR, PIN_IN_TOGGLE))
-      BIT_SET(GPIOB->ODR, PIN_OUT_TOGGLE);
-    else
-      BIT_CLR(GPIOB->ODR, PIN_OUT_TOGGLE);
+    ToggleInterruptRoutine();
     delay_nano();
     EXTI_ClearITPendingBit(EXTI_Line2);
   }
@@ -228,12 +222,10 @@ void EXTI4_15_IRQHandler(void)
 {
   if(EXTI_GetITStatus(EXTI_Line6) != RESET)
   {
-    if(CHK_BIT(GPIOB->IDR, PIN_IN_ACTUATOR_REV))
-      BIT_SET(GPIOB->ODR, PIN_OUT_ACTUATOR_REV);
-    else
-      BIT_CLR(GPIOB->ODR, PIN_OUT_ACTUATOR_REV);
+    ActuatorInterruptRoutine();
     delay_nano();
     
     EXTI_ClearITPendingBit(EXTI_Line6);
   }
 }
+#endif
