@@ -11,6 +11,7 @@ void delay_nano(void);
 void delay_micro(void);
 void delay_short(void);
 void delay_long(UINT8 len);
+void delay_fine_control(UINT32 cnt);
 UINT8 GPIO_ReadInputDataBit(GPIO_TypeDef* GPIOx, UINT16 GPIO_Pin);
 
 UINT32 SetOutput(UINT16 GPIO_Pins);

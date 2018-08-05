@@ -16,6 +16,7 @@
 #define LIGHT_CONTROL	0x10	// GPIOB_4 - no pull
 #define LIGHT_UV			0x20	// GPIOB_5 - no pull
 #define TIMER_CMD     0x80  // GPIOB_7 - no pull
+#define SPEAKER       0x200 // GPIOB_9 - no pull
 
 // Keypad
 #define ROW_1			GPIO_Pin_0	// GPIOA_0
@@ -26,6 +27,12 @@
 #define COL_2			GPIO_Pin_5	// GPIOA_5
 #define COL_3			GPIO_Pin_6	// GPIOA_6
 
+#define TIMER_CMD_DELAY   3
+#define RND_BUF_LEN       4
+
+#define SOUND_KEY_PRESS   250
+#define SOUND_WRONG_CODE  1000
+
 const UINT8 secret_code[4] = {1,2,3,4};
 const UINT8 cmd_ok[16] = {0x00, 0x00, 0xFF, 0x55, 0x55, 0x77, 0x77, 0x77, 0x77, 0x75, 0xD5, 0x55, 0xD7, 0x77, 0x77, 0x7F};
 const UINT8 cmd_al2[16] = {0x00, 0x00, 0xFF, 0x55, 0x55, 0x77, 0x77, 0x77, 0x77, 0x5D, 0xDD, 0x55, 0xD5, 0x77, 0x77, 0x7F};
@@ -34,6 +41,8 @@ UINT8 code_buffer[4] = {0};
 UINT8 retry_counter = 0;
 UINT16 offset = 0;
 UINT8 alarm_on = 0;
+UINT8 emergency_mode = 1;
+const UINT32 rnd_buf[RND_BUF_LEN] = {48672, 61512, 35594, 71511};
 
 
 static void DelayUs(UINT32 micros){
@@ -47,18 +56,22 @@ static void DelayUs(UINT32 micros){
 
 static void SendCmd(const UINT8 *cmd, UINT8 len)
 {
-  UINT8 i,j;
+  UINT8 i,j,k;
   
-  for(i = 0; i < len; i++)
+  for(k = 0; k < 2; k++)
   {
-    for(j = 7; j <= 7; j--)
+    for(i = 0; i < len; i++)
     {
-      if(cmd[i] & (1 << j))
-        BIT_SET(GPIOB->ODR, TIMER_CMD);
-      else
-        BIT_CLR(GPIOB->ODR, TIMER_CMD);
-      DelayUs(635);
+      for(j = 7; j <= 7; j--)
+      {
+        if(cmd[i] & (1 << j))
+          BIT_SET(GPIOB->ODR, TIMER_CMD);
+        else
+          BIT_CLR(GPIOB->ODR, TIMER_CMD);
+        DelayUs(635);
+      }
     }
+    delay_fine_control(rnd_buf[k]);
   }
 }
 
@@ -73,38 +86,47 @@ static void initgpio(void)
 	GPIOA->ODR |= 0xFFF;
 	
 	// Port B
-	GPIOB->MODER = SetOutput(ALARM | LIGHT_CELL | LIGHT_GUARDS | LIGHT_CONTROL | LIGHT_UV | TIMER_CMD);
-	GPIOB->PUPDR = 0;//SetPullDown(LIGHT_CELL); // no push or pull
+	GPIOB->MODER = SetOutput(ALARM | LIGHT_CELL | LIGHT_GUARDS | LIGHT_CONTROL | LIGHT_UV | TIMER_CMD | SPEAKER);
+	GPIOB->PUPDR = 0;
+  GPIOB->PUPDR |= SetPullDown(TRIGGER);
+}
+
+static void play_tone(UINT32 ms, UINT32 tone)
+{
+  UINT32 i;
+  ms = (ms * 1000) / (tone * 2);
+  
+  for(i=0; i < ms; i++)
+  {
+    BIT_SET(GPIOB->ODR, SPEAKER);
+    DelayUs(tone);
+    BIT_CLR(GPIOB->ODR, SPEAKER);
+    DelayUs(tone);
+  }
 }
 
 static void winner (void)
 {
-	
+	delay_long(TIMER_CMD_DELAY);
+  SendCmd(cmd_ok, sizeof(cmd_ok));
+  emergency_mode = 0;
 }
 
 static void loser (void)
 {	
-	
+  delay_long(2);
+  play_tone(1000, SOUND_WRONG_CODE);
 }
-
-/*
-static void play_tone(void)
-{
-	GPIOB->ODR = SPEAKER;
-	delay_long(1);
-	GPIOB->ODR = 0;
-}
-*/
 
 void StartTimer(void)
 {
-  delay_long(10);
+  delay_long(TIMER_CMD_DELAY);
   SendCmd(cmd_on, sizeof(cmd_on));
-  delay_long(10);
+  delay_long(TIMER_CMD_DELAY);
   SendCmd(cmd_al2, sizeof(cmd_al2));
-  delay_long(10);
+  delay_long(TIMER_CMD_DELAY);
   SendCmd(cmd_ok, sizeof(cmd_ok));
-  delay_long(10);
+  delay_long(TIMER_CMD_DELAY);
 }
 
 static UINT8 CheckTimerTimeout(void)
@@ -120,7 +142,7 @@ static UINT8 CheckTimerTimeout(void)
 
 static void disp (UINT8 num)
 {
-	//play_tone();
+	play_tone(250, SOUND_KEY_PRESS);
 	
 	code_buffer[offset++] = num;
 	
@@ -135,60 +157,56 @@ static void disp (UINT8 num)
 	delay();
 }
 
-static void AlarmLoop(void)
+static void CheckKeypad(void)
 {
-	while (alarm_on)
-	{
-		GPIOA->BSRR = COL_3;	//set bit as high  COL 3
-		GPIOA->BSRR = COL_2;	//set bit as high  COL 2
-		GPIOA->BRR = COL_1;	//set bit as low	COL 1
+  GPIOA->BSRR = COL_3;	//set bit as high  COL 3
+  GPIOA->BSRR = COL_2;	//set bit as high  COL 2
+  GPIOA->BRR = COL_1;	//set bit as low	COL 1
 
-		{
-			if(GPIO_ReadInputDataBit(GPIOA, ROW_1))	// ROW 1
-				disp(1);
-			if(GPIO_ReadInputDataBit(GPIOA, ROW_2))	// ROW 2
-				disp(4);
-			if(GPIO_ReadInputDataBit(GPIOA, ROW_3))	// ROW 3
-				disp(7);
-			if(GPIO_ReadInputDataBit(GPIOA, ROW_4))	// ROW 4
-				disp(254);
-		}
-		
-		GPIOA->BSRR = COL_1;	//set bit as high
-		GPIOA->BSRR = COL_3;	//set bit as high
-		GPIOA->BRR = COL_2;	//set bit as low
-		
-		{
-			if(GPIO_ReadInputDataBit(GPIOA, ROW_1))
-				disp(2);
-			if(GPIO_ReadInputDataBit(GPIOA, ROW_2))
-				disp(5);
-			if(GPIO_ReadInputDataBit(GPIOA, ROW_3))
-				disp(8);
-			if(GPIO_ReadInputDataBit(GPIOA, ROW_4))
-				disp(10);
-		}
-		
-		GPIOA->BSRR = COL_2;	//set bit as high
-		GPIOA->BSRR = COL_1;	//set bit as high
-		GPIOA->BRR = COL_3;	//set bit as low
-		
-		{
-			if(GPIO_ReadInputDataBit(GPIOA, ROW_1))
-				disp(3);
-			if(GPIO_ReadInputDataBit(GPIOA, ROW_2))
-				disp(6);
-			if(GPIO_ReadInputDataBit(GPIOA, ROW_3))
-				disp(9);
-			if(GPIO_ReadInputDataBit(GPIOA, ROW_4))
-				disp(255);
-		}
-	}
+  {
+    if(GPIO_ReadInputDataBit(GPIOA, ROW_1))	// ROW 1
+      disp(1);
+    if(GPIO_ReadInputDataBit(GPIOA, ROW_2))	// ROW 2
+      disp(4);
+    if(GPIO_ReadInputDataBit(GPIOA, ROW_3))	// ROW 3
+      disp(7);
+    if(GPIO_ReadInputDataBit(GPIOA, ROW_4))	// ROW 4
+      disp(254);
+  }
+  
+  GPIOA->BSRR = COL_1;	//set bit as high
+  GPIOA->BSRR = COL_3;	//set bit as high
+  GPIOA->BRR = COL_2;	//set bit as low
+  
+  {
+    if(GPIO_ReadInputDataBit(GPIOA, ROW_1))
+      disp(2);
+    if(GPIO_ReadInputDataBit(GPIOA, ROW_2))
+      disp(5);
+    if(GPIO_ReadInputDataBit(GPIOA, ROW_3))
+      disp(8);
+    if(GPIO_ReadInputDataBit(GPIOA, ROW_4))
+      disp(10);
+  }
+  
+  GPIOA->BSRR = COL_2;	//set bit as high
+  GPIOA->BSRR = COL_1;	//set bit as high
+  GPIOA->BRR = COL_3;	//set bit as low
+  
+  {
+    if(GPIO_ReadInputDataBit(GPIOA, ROW_1))
+      disp(3);
+    if(GPIO_ReadInputDataBit(GPIOA, ROW_2))
+      disp(6);
+    if(GPIO_ReadInputDataBit(GPIOA, ROW_3))
+      disp(9);
+    if(GPIO_ReadInputDataBit(GPIOA, ROW_4))
+      disp(255);
+  }
 }
 
 int main (void)
 {
-  UINT8 emergency_mode = 1;
 	initgpio();
 	
   // Initially all the lights are on, and the timer command line must be high.
@@ -211,7 +229,7 @@ int main (void)
     // 5. Wait in keypad for alarm loop, while also waiting for countdown timer to complete.
     while (emergency_mode)
     {
-      AlarmLoop();
+      CheckKeypad();
       if (CheckTimerTimeout())
         emergency_mode = 0;
     }

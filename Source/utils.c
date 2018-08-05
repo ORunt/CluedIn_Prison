@@ -32,6 +32,13 @@ void delay_long(UINT8 len)
 	for(delay_counter = 0; delay_counter < len; delay_counter++)
 		delay();
 }
+
+void delay_fine_control(UINT32 cnt)
+{
+	UINT32 delay_counter;
+	for(delay_counter = 0; delay_counter < cnt; delay_counter++);
+}
+
 /*
 UINT8 GPIO_ReadInputDataBit(GPIO_TypeDef* GPIOx, UINT16 GPIO_Pin)
 {
