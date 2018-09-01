@@ -30,8 +30,13 @@
 #define TIMER_CMD_DELAY   3
 #define RND_BUF_LEN       4
 
-#define SOUND_KEY_PRESS   250
-#define SOUND_WRONG_CODE  1000
+// period in us/2
+#define SOUND_KEY_PRESS   250   // 2khz
+#define SOUND_WRONG_CODE  1000  // 500hz
+#define SOUND_WIN_1       500   // 1khz
+#define SOUND_WIN_2       333   // 1.5khz
+#define SOUND_WIN_3       250   // 2khz
+#define SOUND_WIN_4       200   // 2.5khz
 
 const UINT8 secret_code[4] = {1,2,3,4};
 const UINT8 cmd_ok[16] = {0x00, 0x00, 0xFF, 0x55, 0x55, 0x77, 0x77, 0x77, 0x77, 0x75, 0xD5, 0x55, 0xD7, 0x77, 0x77, 0x7F};
@@ -42,7 +47,7 @@ UINT8 retry_counter = 0;
 UINT16 offset = 0;
 UINT8 alarm_on = 0;
 UINT8 emergency_mode = 1;
-const UINT32 rnd_buf[RND_BUF_LEN] = {48672, 61512, 35594, 71511};
+const UINT32 rnd_buf[RND_BUF_LEN] = {48672, 35594, 61512, 71511};
 
 
 static void DelayUs(UINT32 micros){
@@ -58,7 +63,7 @@ static void SendCmd(const UINT8 *cmd, UINT8 len)
 {
   UINT8 i,j,k;
   
-  for(k = 0; k < 2; k++)
+  for(k = 0; k < 3; k++)
   {
     for(i = 0; i < len; i++)
     {
@@ -107,7 +112,16 @@ static void play_tone(UINT32 ms, UINT32 tone)
 
 static void winner (void)
 {
-	delay_long(TIMER_CMD_DELAY);
+  delay_long(2);
+  play_tone(250, SOUND_WIN_1);
+  delay_short();
+  play_tone(250, SOUND_WIN_2);
+  delay_short();
+  play_tone(250, SOUND_WIN_3);
+  delay_short();
+  play_tone(250, SOUND_WIN_4);
+	//delay_long(TIMER_CMD_DELAY);
+  delay_short();
   SendCmd(cmd_ok, sizeof(cmd_ok));
   emergency_mode = 0;
 }
@@ -136,6 +150,22 @@ static UINT8 CheckTimerTimeout(void)
   
   for (i = 0; i < 400; i++)
     timer_complete_loop |= CHK_BIT(GPIOB->IDR, TIMER_COMPLETE);
+  
+  if ((timer_complete_loop == 0) && (emergency_mode))
+  {
+    UINT8 j;
+    for(j = 0; j<5; j++)
+    {
+      delay_long(2);
+      play_tone(50, SOUND_KEY_PRESS);
+      delay_short();
+      delay_short();
+      play_tone(50, SOUND_KEY_PRESS);
+      delay_short();
+      delay_short();
+      play_tone(50, SOUND_KEY_PRESS);
+    }
+  }
   
   return (timer_complete_loop == 0);
 }

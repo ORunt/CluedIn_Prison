@@ -1133,7 +1133,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>.\Source;.\RTE\Device\STM32F030C6</IncludePath>
+              <IncludePath>.\Source;.\RTE\Device\STM32F030C6;.\Source\lib</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
